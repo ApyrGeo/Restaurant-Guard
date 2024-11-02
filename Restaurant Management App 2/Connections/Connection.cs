@@ -9,7 +9,7 @@ namespace Restaurant_Management_App
 {
     public class Connection
     {
-        private readonly string connectionString;
+        private readonly string connectionString = File.ReadAllText("..\\..\\..\\.env");
         public MySqlConnection connection;
 
         public Connection()
