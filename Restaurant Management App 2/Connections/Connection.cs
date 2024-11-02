@@ -15,7 +15,7 @@ namespace Restaurant_Management_App
         public Connection()
         {
             connection = new MySqlConnection(connectionString);
-        }
+        } 
         public void Open() { connection.Open(); }
         public void Close() { connection.Close(); }
         public MySqlConnection GetCon() { return connection; }
