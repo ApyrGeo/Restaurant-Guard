@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public class Employee
     {
@@ -23,10 +23,7 @@ namespace Restaurant_Management_App
         public int GetId () { return id; }
         public int GetSalary () {  return salary; }
         public string GetName () { return name; }
-
         public string GetUsername() { return username; }
         public string GetPassword () { return password; }
-        //public void setSalary(int new_salary) { salary = new_salary; }
-
     }
 }

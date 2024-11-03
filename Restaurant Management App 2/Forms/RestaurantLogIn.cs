@@ -10,21 +10,23 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public partial class RestaurantLogIn : Form
     {
-        private Connection con;
-        public RestaurantLogIn()
+        private MySqlConnection _connection;
+        private ServiceExistingRestaurant ser;
+        public RestaurantLogIn(ServiceExistingRestaurant ser)
         {
             InitializeComponent();
-            this.con = new Connection();
+            _connection = Connection.GetInstance().GetCon();
+            this.ser = ser;
         }
-        public RestaurantLogIn(int id)
+        public RestaurantLogIn(ServiceExistingRestaurant ser, int id)
         {
             InitializeComponent();
-            this.con = new Connection();
-
+            _connection = Connection.GetInstance().GetCon();
+            this.ser = ser;
             txt_id.Text = id.ToString();
         }
         private void RestaurantLogIn_Load(object sender, EventArgs e)
@@ -51,9 +53,10 @@ namespace Restaurant_Management_App
         {
             try
             {
-                int id = CheckData();
+                ser.CheckCredentials(txt_id.Text, txt_password.Text);
+                ser.SetId(Convert.ToInt32(txt_id.Text));
                 this.Hide();
-                new MainMenu(new Restaurant(id)).ShowDialog();
+                new MainMenu(ser.GetRestaurant()).ShowDialog();
                 this.Close();
                 this.Dispose();
             }
@@ -61,28 +64,6 @@ namespace Restaurant_Management_App
             {
                 MessageBox.Show(ex.Message,"Error");
             }
-        }
-        private int CheckData()
-        {
-            if (txt_id.Text.Length == 0) throw new Exception("Please enter an id!");
-            foreach(char c in txt_id.Text)
-            {
-                if (!('0' <= c && c <= '9'))
-                    throw new Exception("Invalid id!");
-            }
-
-            if (txt_password.Text.Length == 0) throw new Exception("Please enter a password!");
-
-            con.Open();
-            if (new MySqlCommand($"SELECT id FROM Restaurants WHERE id={Convert.ToInt32(txt_id.Text)} AND password='{txt_password.Text}'",con.GetCon()).ExecuteScalar() == null)
-            {
-                con.Close();
-                throw new Exception("The given input does not correspond to any restaurant!");
-            }
-            int id = (int)new MySqlCommand($"SELECT id FROM Restaurants WHERE id={Convert.ToInt32(txt_id.Text)} AND password='{txt_password.Text}'", con.GetCon()).ExecuteScalar();
-            con.Close();
-
-            return id;
         }
 
         private void lbl_register_Click(object sender, EventArgs e)

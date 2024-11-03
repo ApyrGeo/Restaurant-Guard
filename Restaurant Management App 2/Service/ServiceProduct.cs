@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Restaurant_Management_App_2.Repository;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public class ServiceProduct
     {
@@ -21,28 +22,28 @@ namespace Restaurant_Management_App
             if (price.Length == 0) throw new Exception("Please enter a price!");
             if (!price.All(char.IsDigit)) throw new Exception("Invalid price!");
             if (Convert.ToInt32(price) < 0) throw new Exception("Price is invalid!");
-            if (GetServiceRepo().FindProduct(name) != null) throw new Exception("Product already exists!");
+            if (GetServiceRepo().GetProduct(name) != null) throw new Exception("Product already exists!");
 
             if (quantity == "")
-                GetServiceRepo().AddToList(new Product(0, category, name, Convert.ToInt32(price)));
+                GetServiceRepo().AddProduct(new Product(0, category, name, Convert.ToInt32(price)));
             else
-                GetServiceRepo().AddToList(new ConsumableProduct(0, category, name, Convert.ToInt32(quantity), Convert.ToInt32(price)));
+                GetServiceRepo().AddProduct(new ConsumableProduct(0, category, name, Convert.ToInt32(quantity), Convert.ToInt32(price)));
 
             return this;
         }
 
         public ServiceProduct DeleteProduct(int id)
         {
-            if (GetServiceRepo().FindProduct(id) == null)
+            if (GetServiceRepo().GetProduct(id) == null)
                 throw new Exception("Invalid id");
-            GetServiceRepo().RemoveFromList(id);
+            GetServiceRepo().RemoveProduct(id);
 
             return this;
         }
 
         public ServiceProduct AddQuantity(int product_id, int quantity)
         {
-            if (GetServiceRepo().FindProduct(product_id) == null)
+            if (GetServiceRepo().GetProduct(product_id) == null)
                 throw new Exception("Invalid id");
 
             if (quantity <= 0) throw new Exception("Invalid quantity!");
@@ -53,12 +54,12 @@ namespace Restaurant_Management_App
         }
         public ServiceProduct RemoveQuantity(int product_id, int quantity)
         {
-            if (GetServiceRepo().FindProduct(product_id) == null)
+            if (GetServiceRepo().GetProduct(product_id) == null)
                 throw new Exception("Invalid id");
 
             if (quantity <= 0) throw new Exception("Invalid quantity!");
 
-            if (GetServiceRepo().FindProduct(product_id).GetQuantity() - quantity < 0 && GetServiceRepo().FindProduct(product_id).GetType()==typeof(ConsumableProduct ))
+            if (GetServiceRepo().GetProduct(product_id).GetQuantity() - quantity < 0 && GetServiceRepo().GetProduct(product_id).GetType()==typeof(ConsumableProduct ))
                 throw new Exception("Not enough product in stock!");
 
             GetServiceRepo().AddQuantity(product_id, -quantity);

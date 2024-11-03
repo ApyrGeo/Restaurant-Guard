@@ -1,80 +1,79 @@
-﻿using MySql.Data.MySqlClient;
+﻿using Microsoft.Win32;
+using MySql.Data.MySqlClient;
+using Restaurant_Management_App_2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2.Repository
 {
     public class RepositoryTable
     {
-        protected List<Table> list_tables =  new List<Table>();
-        public virtual void AddToList(Table t) { list_tables.Add(t); }
-        public virtual void RemoveFromList(int id) { list_tables.Remove(FindTable(id)); }
-        public List<Table> GetRepoList() { return list_tables;}
-        public Table FindTable(int id) { return list_tables.Find((Table t) => t.GetId() == id); }
-        public virtual void ChangeStatus(int id, bool status) { FindTable(id).ChangeStatus(status); }
-        public virtual void Refresh() { }
-    }
-    class RepositoryFileTable: RepositoryTable
-    {
-        private Connection con;
-        private int rest_id;
-        public RepositoryFileTable(int rest_id) 
-        {
-            this.rest_id = rest_id;
-            con = new Connection();
-            LoadFromFile();
+        private readonly MySqlConnection _connection;
+        private readonly int _restaurantId;
+        public RepositoryTable(int restId) { 
+            _connection = Connection.GetInstance().GetCon();
+            _restaurantId = restId;
         }
-        public void LoadFromFile()
-        {
-            con.Open();
 
-            MySqlDataReader read = new MySqlCommand($"SELECT * FROM Tables WHERE id_rest={rest_id}",con.GetCon()).ExecuteReader();
-            while(read.Read())
+        public List<Table> GetTables()
+        {
+            List<Table> tables = [];
+
+            MySqlCommand cmd = new("SELECT id, seats, status, X, Y FROM Tables WHERE id_rest=@rid", _connection);
+            cmd.Parameters.AddWithValue("@rid", _restaurantId);
+
+            MySqlDataReader reader = cmd.ExecuteReader();
+            while(reader.Read())
             {
-                list_tables.Add(new Table(read.GetInt32(0), read.GetInt32(2), read.GetBoolean(3)));
+                tables.Add(new(reader.GetInt32(0), reader.GetInt32(1), reader.GetBoolean(2), reader.GetFloat(3), reader.GetFloat(4)));
             }
-            con.Close();
+
+            return tables;
         }
-        public override void AddToList(Table t)
+
+        public Table GetTable(int id)
         {
-            base.AddToList(t);
+            List<Table> tables = [];
 
-            con.Open();
-            new MySqlCommand($"INSERT INTO Tables (id_rest,seats,status) VALUES ({rest_id},{t.GetNoSeats()},{t.GetStatus()})", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Tables','INSERT','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-            con.Close();
+            MySqlCommand cmd = new("SELECT id, seats, status, X, Y FROM Tables WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
 
-            Refresh();
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
+
+            return new Table(reader.GetInt32(0), reader.GetInt32(1), reader.GetBoolean(2), reader.GetFloat(3), reader.GetFloat(4));
         }
-        public override void RemoveFromList(int id)
+
+        public void AddTable(Table t)
         {
-            base.RemoveFromList(id);
+            MySqlCommand cmd = new("INSERT INTO Tables(id_rest, seats, status, X, Y) VALUES(@id_rest, @seats, @status, @X, @Y)", _connection);
+            cmd.Parameters.AddWithValue("@id_rest", _restaurantId);
+            cmd.Parameters.AddWithValue("@seats", t.GetNoSeats());
+            cmd.Parameters.AddWithValue("@status", t.GetStatus());
+            cmd.Parameters.AddWithValue("@X", t.GetX());
+            cmd.Parameters.AddWithValue("@Y", t.GetY());
 
-            con.Open();
-            new MySqlCommand($"DELETE FROM Tables WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Tables','DELETE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-            con.Close();
-
-            Refresh();
-
+            cmd.ExecuteNonQuery();
         }
-        public override void ChangeStatus(int id, bool status)
-        {
-            base.ChangeStatus(id, status);
 
-            con.Open();
-            new MySqlCommand($"UPDATE Tables SET status = {status} WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Tables','UPDATE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-            con.Close();
-            Refresh();
-        }
-        public override void Refresh()
+        public void RemoveTable(int id)
         {
-            list_tables.Clear();
-            LoadFromFile();
+            MySqlCommand cmd = new("DELETE FROM Tables WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        public void ChangeStatus(int id, bool newStatus)
+        {
+            MySqlCommand cmd = new("UPDATE TABLE Tables SET status=@nstatus WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.Parameters.AddWithValue("@nstatus", newStatus);
+
+            cmd.ExecuteNonQuery();
         }
     }
 }

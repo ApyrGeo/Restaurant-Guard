@@ -1,5 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
-using Restaurant_Management_App;
+using Restaurant_Management_App_2;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,7 +12,7 @@ using System.Text;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public partial class MainMenu : Form
     {
@@ -27,7 +27,7 @@ namespace Restaurant_Management_App
         private readonly ServiceEmployee ServiceEmployee;
         private readonly ServiceOrder ServiceOrder;
         private readonly ServiceProduct ServiceProduct;
-        private readonly ServiceRestaurant ServiceRestaurant;
+        private readonly ServiceExistingRestaurant ServiceRestaurant;
         private Kitchen kitchen_window;
         private ManageProducts products_window;
         private ManageEmployees employees_window;

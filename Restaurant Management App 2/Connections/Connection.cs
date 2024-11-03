@@ -5,19 +5,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
-    public class Connection
+    public sealed class Connection
     {
-        private readonly string connectionString = File.ReadAllText("..\\..\\..\\.env");
-        public MySqlConnection connection;
+        private static Connection? instance = null;
+        private static readonly string connectionString = File.ReadAllText("..\\..\\..\\.env");
+        private MySqlConnection connection;
 
-        public Connection()
+        private Connection()
         {
-            connection = new MySqlConnection(connectionString);
         } 
-        public void Open() { connection.Open(); }
-        public void Close() { connection.Close(); }
+
+        public static Connection GetInstance() {
+            if (instance == null)
+            {
+                instance = new Connection();
+                instance.connection = new MySqlConnection(connectionString);
+                instance.connection.Open();
+            }
+
+            return instance;
+        }
         public MySqlConnection GetCon() { return connection; }
     }
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public class Product
     {

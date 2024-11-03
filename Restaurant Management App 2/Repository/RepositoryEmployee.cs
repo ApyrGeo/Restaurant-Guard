@@ -1,77 +1,79 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
-using MySql.Data;
 using MySql.Data.MySqlClient;
+using Restaurant_Management_App_2;
 
-namespace Restaurant_Management_App
-{
+namespace Restaurant_Management_App_2.Repository
+{ 
     public class RepositoryEmployee
     {
-        protected static List<Employee> employee_list = new List<Employee>();
-
-        public List<Employee> GetRepoList() { return employee_list; }
-        public Employee FindEmployee(int id)
-        {
-            return employee_list.Find((Employee e) => e.GetId() == id);
+        private MySqlConnection _connection;
+        private int _idRestaurant;
+        public RepositoryEmployee(int idRestaurant) {
+            _connection = Connection.GetInstance().GetCon();
+            _idRestaurant = idRestaurant;
         }
-        public Employee FindEmployee(string uname)
-        {
-            return employee_list.Find((Employee e) => e.GetUsername() == uname);
-        }
-        virtual public void AddToList(Employee e) { employee_list.Add(e); }
-        virtual public void RemoveFromList(int id) { employee_list.Remove(employee_list.Find((Employee e) => e.GetId() == id)); }
-        virtual public void Refresh() { }
-    }
-    class RepositoryFileEmployee : RepositoryEmployee
-    {
-        private readonly Connection con;
-        private readonly int rest_id;
-        public RepositoryFileEmployee(int rest_id) { this.rest_id = rest_id; con = new Connection(); LoadFromFile(); }
-        public void LoadFromFile()
-        {
-            con.Open();
-            MySqlCommand cmd = new MySqlCommand($"SELECT * FROM Employees WHERE id_rest={rest_id}", con.GetCon());
 
-            MySqlDataReader read = cmd.ExecuteReader();
-            while(read.Read())
+        public List<Employee> GetEmployees()
+        {
+            List<Employee> employees = new List<Employee>();
+
+            MySqlCommand cmd = new MySqlCommand("SELECT id, salary, name, username, password FROM Employees WHERE id_rest=@idr", _connection);
+            cmd.Parameters.AddWithValue("@idr", _idRestaurant);
+            MySqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                employee_list.Add(new Employee(read.GetInt32(0), read.GetInt32(2), read.GetString(3), read.GetString(4), read.GetString(5)));
+                employees.Add(new Employee(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4)));
             }
 
-            con.Close();
+            return employees;
         }
-        override public void AddToList(Employee e) 
+
+        public Employee GetEmployee(int id) 
         {
-            employee_list.Add(e);
-           
-            con.Open();
-            new MySqlCommand($"INSERT INTO Employees (id_rest,salary,name, username, password) VALUES ({rest_id},{e.GetSalary()},'{e.GetName()}','{e.GetUsername()}','{e.GetPassword()}')", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Employees','INSERT','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
 
-            con.Close();
+            MySqlCommand cmd = new MySqlCommand("SELECT id, salary, name, username, password FROM Employees WHERE id_rest=@idr AND id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.Parameters.AddWithValue("@idr", _idRestaurant);
+            MySqlDataReader reader = cmd.ExecuteReader();
 
-            Refresh();
+            reader.Read();
+            return new(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
         }
-        override public void RemoveFromList(int id)
+
+        public void SaveEmployee(Employee e)
         {
-            employee_list.Remove(employee_list.Find((Employee e) => e.GetId() == id));
+            MySqlCommand cmd = new MySqlCommand("INSERT INTO Employees(id_rest, salary, name, username, password) VALUES(@id_rest, @salary, @name, @username, @password)", _connection);
+            cmd.Parameters.AddWithValue("@id_rest", _idRestaurant);
+            cmd.Parameters.AddWithValue("@salary",e.GetSalary());
+            cmd.Parameters.AddWithValue("@name", e.GetName());
+            cmd.Parameters.AddWithValue("@username", e.GetUsername());
+            cmd.Parameters.AddWithValue("@password", e.GetPassword());
 
-            con.Open();
-            new MySqlCommand($"DELETE FROM Employees WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Employees','DELETE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
-            Refresh();
+            cmd.ExecuteNonQuery();
         }
-        public override void Refresh()
+
+        public void DeleteEmployee(int id)
         {
-            employee_list.Clear();
-            LoadFromFile();
+            MySqlCommand cmd = new MySqlCommand("DELETE FROM Employees WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        public Employee FindEmployee(string username)
+        {
+            MySqlCommand cmd = new MySqlCommand("SELECT id, salary, name, username, password FROM Employees WHERE id_rest=@idr AND username=@username", _connection);
+            cmd.Parameters.AddWithValue("@username", username);
+            cmd.Parameters.AddWithValue("@idr", _idRestaurant);
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            reader.Read();
+            return new(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
         }
     }
 }

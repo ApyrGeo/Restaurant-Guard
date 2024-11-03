@@ -10,6 +10,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Repository\old - Copy\**" />
+    <Compile Remove="Repository\old\**" />
+    <EmbeddedResource Remove="Repository\old - Copy\**" />
+    <EmbeddedResource Remove="Repository\old\**" />
+    <None Remove="Repository\old - Copy\**" />
+    <None Remove="Repository\old\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MySql.Data" Version="9.0.0" />
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿using Restaurant_Management_App;
+﻿using Restaurant_Management_App_2;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public partial class Kitchen : Form
     {

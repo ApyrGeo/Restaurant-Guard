@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Restaurant_Management_App_2.Repository;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public class ServiceOrder
     {
@@ -23,16 +24,16 @@ namespace Restaurant_Management_App
         public RepositoryProduct GetRepoProduct() {  return repoP; }
         public ServiceOrder AddOrder(int table_id, List<Tuple<int, int>> list, string status="NOT TAKEN")
         {
-            if (GetRepoTable().FindTable(table_id) == null) throw new Exception("Table does not exist!");
-            if (GetRepoTable().FindTable(table_id).GetStatus() == true) throw new Exception("Table is occupied!");
+            if (GetRepoTable().GetTable(table_id) == null) throw new Exception("Table does not exist!");
+            if (GetRepoTable().GetTable(table_id).GetStatus() == true) throw new Exception("Table is occupied!");
            
 
             foreach(var item in list)
             {
-                if (GetRepoProduct().FindProduct(item.Item1) == null)
+                if (GetRepoProduct().GetProduct(item.Item1) == null)
                     throw new Exception("Item does not exist!");
 
-                if (GetRepoProduct().FindProduct(item.Item1).GetQuantity() - item.Item2 < 0)
+                if (GetRepoProduct().GetProduct(item.Item1).GetQuantity() - item.Item2 < 0)
                     throw new Exception("The given quantity is too large for the current stock!");
             }
 
@@ -41,7 +42,7 @@ namespace Restaurant_Management_App
                 GetRepoProduct().AddQuantity(item.Item1, -item.Item2);
             }
 
-            GetRepoOrder().AddToList(new Order(0, table_id, list, status));
+            GetRepoOrder().AddOrder(new Order(0, table_id, list, status));
 
             GetRepoTable().ChangeStatus(table_id, true);
 
@@ -51,7 +52,7 @@ namespace Restaurant_Management_App
         {
             GetRepoTable().ChangeStatus(GetRepoOrder().FindOrder(order_id).GetIdTable(), false);
 
-            GetRepoOrder().RemoveFromList(order_id);
+            GetRepoOrder().RemoveOrder(order_id);
 
             return this;
         }
@@ -76,10 +77,10 @@ namespace Restaurant_Management_App
         public ServiceOrder AddCommandToOrder(int order_id, Tuple<int,int> item)
         {
             if (GetRepoOrder().FindOrder(order_id) == null) throw new Exception("Invalid Order Id!");
-            if (GetRepoProduct().FindProduct(item.Item1) == null) throw new Exception("Invalid Product!");
+            if (GetRepoProduct().GetProduct(item.Item1) == null) throw new Exception("Invalid Product!");
             if (item.Item2 <= 0) throw new Exception("Invalid Count!");
 
-            if (GetRepoProduct().FindProduct(item.Item1).GetQuantity() - item.Item2 < 0 && repoP.FindProduct(item.Item1).GetType() == typeof(ConsumableProduct))
+            if (GetRepoProduct().GetProduct(item.Item1).GetQuantity() - item.Item2 < 0 && repoP.GetProduct(item.Item1).GetType() == typeof(ConsumableProduct))
                 throw new Exception("The given quantity is too large for the current stock!");
 
             GetRepoOrder().AddToOrder(order_id, item);
@@ -90,9 +91,13 @@ namespace Restaurant_Management_App
 
             return this;
         }
-        public List<Order> GetOrders() { return GetRepoOrder().GetRepoList(); }
-        public List<Order> GetOrders(string status) {  return GetRepoOrder().GetRepoList().FindAll((Order o) => o.GetStatus() == status); }
-   
-        
+        public List<Order> GetOrders() 
+        { 
+            return GetRepoOrder().GetOrders(); 
+        }
+        public List<Order> GetOrders(string status) 
+        {  
+            return GetRepoOrder().GetOrders().FindAll((Order o) => o.GetStatus() == status); 
+        }
     }
 }

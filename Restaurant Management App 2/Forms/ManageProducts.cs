@@ -12,7 +12,7 @@ using System.Windows.Forms;
 using Microsoft.VisualBasic;
 using System.Text.RegularExpressions;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public partial class ManageProducts : Form
     {

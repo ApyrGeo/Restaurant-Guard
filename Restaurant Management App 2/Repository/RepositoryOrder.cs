@@ -1,147 +1,158 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using Mysqlx.Connection;
+using Restaurant_Management_App_2;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MySql.Data;
-using MySql.Data.MySqlClient;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2.Repository 
 {
     public class RepositoryOrder
     {
-        protected List<Order> list_order = new List<Order>();
-        
-        public virtual void AddToList(Order o)
+        private MySqlConnection _connection;
+        private int _restaurantId;
+
+        public RepositoryOrder(int restaurantId)
         {
-            list_order.Add(o);
+            _connection = Connection.GetInstance().GetCon();
+            _restaurantId = restaurantId;
         }
+
+        public void AddOrder(Order o)
+        {
+            MySqlCommand cmd = new("INSERT INTO Orders(id_rest, status) VALUES(@rid, @status)", _connection);
+            cmd.Parameters.AddWithValue("@rid", _restaurantId);
+            cmd.Parameters.AddWithValue("@status", o.GetStatus());
+            cmd.ExecuteNonQuery();
+
+            int newId = (int)new MySqlCommand($"SELECT LAST_INSERTED_ID() FROM Orders ORDER BY id DESC WHERE id_rest={_restaurantId}", _connection).ExecuteScalar();
+
+            o.GetCommand().ForEach( c => {
+                cmd = new("INSERT INTO TableOrders(id_order, id_table, id_product, quantity) VALUES(@id_order, @id_table, @id_product, @quantity)", _connection);
+                cmd.Parameters.AddWithValue("@id_order", newId);
+                cmd.Parameters.AddWithValue("@id_table", o.GetIdTable());
+                cmd.Parameters.AddWithValue("@id_product", c.Item1);
+                cmd.Parameters.AddWithValue("@quantity", c.Item2);
+
+                cmd.ExecuteNonQuery();
+               });
+        }
+
         public Order FindOrder(int id)
         {
-            return list_order.Find((Order o) => o.GetId() == id);
+            MySqlCommand cmd = new("SELECT status FROM Orders WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
+
+            string status = reader.GetString(0);
+
+            cmd = new("SELECT id_table, id_product, quantity FROM TableOrders WHERE id_order=@oid", _connection);
+            cmd.Parameters.AddWithValue("@oid", id);
+
+
+            List<Tuple<int,int>> commands = new List<Tuple<int,int>>();
+            int id_table = -1;
+
+            reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                id_table = reader.GetInt32(0);
+                commands.Add(new Tuple<int, int>(reader.GetInt32(1), reader.GetInt32(2)));
+            }
+
+            return new Order(id, id_table, commands, status);
         }
+
         public Order FindOrderByTableId(int table_id)
         {
-            return list_order.Find((Order o) => o.GetIdTable() == table_id);
-        }
-        public virtual void RemoveFromList(int id)
-        {
-            list_order.Remove(FindOrder(id));
-        }
-        public virtual void AddToOrder(int id, Tuple<int,int> item)
-        {
-            FindOrder(id).AddToCommand(item);
-        }
-        public virtual void ChangeStatus(int id, string nstatus)
-        {
-            FindOrder(id).ChangeStatus(nstatus);
-        }
-        public List<Order> GetRepoList() { return list_order; }
-        virtual public void Refresh() { } 
-    }
-    public class RepositoryFileOrder : RepositoryOrder
-    {
-        private readonly Connection con;
-        private readonly int rest_id;
+            MySqlCommand cmd = new("SELECT id_order, id_product, quantity FROM TableOrders WHERE id_table=@tid", _connection);
+            cmd.Parameters.AddWithValue("@tid", table_id);
+            
+            MySqlDataReader reader = cmd.ExecuteReader();
+            
+            List<Tuple<int, int>> commands = new List<Tuple<int, int>>();
+            int id_order = -1;
 
-        public RepositoryFileOrder(int rest_id)
-        {
-            this.rest_id = rest_id;
-            this.con = new Connection();
-            LoadFromFile();
+            while (reader.Read())
+            {
+                id_order = reader.GetInt32(0);
+                commands.Add(new(reader.GetInt32(1), reader.GetInt32(2)));
+            }
+
+            cmd = new("SELECT status FROM Orders WHERE id_order=@oid", _connection);
+            cmd.Parameters.AddWithValue("@oid", id_order);
+
+            string status = (string)cmd.ExecuteScalar();
+
+            return new Order(id_order, table_id, commands, status);
         }
-        public void LoadFromFile() 
+        public void RemoveOrder(int id)
         {
-            con.Open();
-            MySqlDataReader read = new MySqlCommand($"SELECT * FROM Orders WHERE id_rest={rest_id}",con.GetCon()).ExecuteReader();
+            MySqlCommand cmd = new("DELETE FROM Orders WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+
+            cmd = new("DELETE FROM TableOrders WHERE id_order=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+        }
+        public void AddToOrder(int id, Tuple<int, int> item)
+        {
+            int id_table = (int)new MySqlCommand($"SELECT TOP 1 id_table FROM TableOrders WHERE id_order={id}", _connection).ExecuteScalar();
+
+            MySqlCommand cmd = new("INSERT INTO TableOrders(id_order, id_table, id_product, quantity) VALUES(@id_order, @id_table, @id_product, @quantity)", _connection);
+            cmd.Parameters.AddWithValue("@id_order", id);
+            cmd.Parameters.AddWithValue("@id_table", id_table);
+            cmd.Parameters.AddWithValue("@id_product", item.Item1);
+            cmd.Parameters.AddWithValue("@quantity", item.Item2);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        public void ChangeStatus(int id, string nstatus)
+        {
+            MySqlCommand cmd = new("UPDATE TABLE Orders SET status=@status WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@status", nstatus);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
+        }
+        public List<Order> GetOrders()
+        {
+            MySqlCommand cmd = new("SELECT id, status FROM Orders WHERE id_rest=@rid", _connection);
+            cmd.Parameters.AddWithValue("@rid", _restaurantId); 
+
+            List<Order> orders = new List<Order>();
+
+            MySqlDataReader read = cmd.ExecuteReader();
             while (read.Read())
             {
-                List<Tuple<int, int>> command_list = new List<Tuple<int, int>>();
-                string command = read.GetString(3);
-                if (command.Length < 1) goto isEmpty;
-                foreach(string s in command.Split(','))
+                int id_order = read.GetInt32(0);
+                string status = read.GetString(1);
+
+                MySqlCommand subcmd = new("SELECT id_table, id_product, quantity FROM TableOrders WHERE id_order=@oid", _connection);
+                subcmd.Parameters.AddWithValue("@oid", id_order);
+
+                List<Tuple<int,int>> commands = new List<Tuple<int,int>>();
+                int id_table = -1;
+
+                MySqlDataReader read2 = subcmd.ExecuteReader();
+                while (read2.Read())
                 {
-                    int id_product = Convert.ToInt32(s.Split('-')[0]);
-                    int count = Convert.ToInt32(s.Split('-')[1]);
-
-                    command_list.Add(new Tuple<int,int>(id_product,count));
+                    id_table = read2.GetInt32(0);
+                    commands.Add(new(read2.GetInt32(1), read2.GetInt32(2)));
                 }
-            isEmpty:
-                base.AddToList(new Order(read.GetInt32(0), read.GetInt32(2), command_list, read.GetString(4)));
+
+                orders.Add(new(id_order,id_table, commands, status));
             }
-            con.Close();
-        }
-        public override void AddToList(Order o)
-        {
-            base.AddToList(o);
 
-            string command = "";
-            foreach (Tuple<int, int> t in o.GetCommand())
-            {
-                command += t.Item1.ToString() + "-" + t.Item2.ToString() + ",";
-            }
-            if( command != "") command = command.Substring(0, command.Length - 1);
-
-            con.Open();
-
-            new MySqlCommand($"INSERT INTO Orders(id_rest, id_table, command, status) VALUES({rest_id},{o.GetIdTable()},'{command}', '{o.GetStatus()}')", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Orders','INSERT','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
-            Refresh();
-        }
-        public override void RemoveFromList(int id)
-        {
-            base.RemoveFromList(id);
-
-            con.Open();
-            new MySqlCommand($"DELETE FROM Orders WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Orders','DELETE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
-            Refresh();
-        }
-        public override void AddToOrder(int id, Tuple<int, int> item)
-        {
-            base.AddToOrder(id, item);
-
-            Order wanted = FindOrder(id);
-
-            string command = "";
-            foreach (Tuple<int, int> t in wanted.GetCommand())
-            {
-                command += t.Item1.ToString() + "-" + t.Item2.ToString() + ",";
-            }
-            command = command.Substring(0, command.Length - 1);
-            con.Open();
-            new MySqlCommand($"UPDATE Orders SET command='{command}' WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Orders','UPDATE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
-            Refresh();
-        }
-        public override void ChangeStatus(int id, string nstatus)
-        {
-            base.ChangeStatus(id, nstatus);
-            
-            con.Open();
-            new MySqlCommand($"UPDATE Orders SET status='{nstatus}' WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Orders','UPDATE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
-            Refresh();
-        }
-        public override void Refresh()
-        {
-            list_order.Clear();
-            LoadFromFile();
+            return orders;
         }
     }
-
 }

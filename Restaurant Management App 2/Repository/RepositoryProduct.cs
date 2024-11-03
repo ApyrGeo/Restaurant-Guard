@@ -1,103 +1,106 @@
 ﻿using MySql.Data.MySqlClient;
+using Restaurant_Management_App_2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2.Repository
 {
     public class RepositoryProduct
     {
-        protected static List<Product> product_list = new List<Product>();
+        private readonly MySqlConnection _connection;
+        private readonly int _restaurantId;
 
-        public List<Product> GetRepoList() { return product_list; }
-        public Product FindProduct(int id)
+        public RepositoryProduct(int rid)
         {
-            return product_list.Find((Product p) => p.GetId() == id);
+            _connection = Connection.GetInstance().GetCon();
+            _restaurantId = rid;
         }
-        public Product FindProduct(string name)
-        {
-            return product_list.Find((Product p) => p.GetName() == name);
 
+        public void AddProduct(Product p)
+        {
+            MySqlCommand cmd = new("INSERT INTO Products(id_rest, category, name, quantity, price) VALUES(@id_rest, @category, @name, @quantity, @price)", _connection);
+            cmd.Parameters.AddWithValue("@id_rest", _restaurantId);
+            cmd.Parameters.AddWithValue("@category", p.GetCategory());
+            cmd.Parameters.AddWithValue("@name", p.GetName());
+            cmd.Parameters.AddWithValue("@quantity", typeof(ConsumableProduct) == p.GetType() ? p.GetQuantity() : null);
+            cmd.Parameters.AddWithValue("@price", p.GetPrice());
+
+            cmd.ExecuteNonQuery();
         }
-        virtual public void AddToList(Product p) { product_list.Add(p); }
-        virtual public void RemoveFromList(int id) { product_list.Remove(product_list.Find((Product p) => p.GetId() == id)); }
-        virtual public void AddQuantity(int id, int quantity) { }
 
-        virtual public void Refresh() { }
-    }
-    class RepositoryFileProduct : RepositoryProduct
-    {
-        private readonly Connection con;
-        private readonly int rest_id;
-        public RepositoryFileProduct(int rest_id) { this.rest_id = rest_id; con = new Connection(); LoadFromFile(); }
-        public void LoadFromFile()
+        public List<Product> GetProducts()
         {
-            con.Open();
-            MySqlCommand cmd = new MySqlCommand($"SELECT * FROM Products WHERE id_rest={rest_id}", con.GetCon());
+            List<Product> products = [];
 
-            MySqlDataReader read = cmd.ExecuteReader();
-            while (read.Read())
+            MySqlCommand cmd = new("SELECT id, category, name, price, quantity FROM Products WHERE id_rest=@rid", _connection);
+            cmd.Parameters.AddWithValue("@rid", _restaurantId);
+
+            MySqlDataReader reader = cmd.ExecuteReader();
+            while(reader.Read()) 
             {
-                if(read.IsDBNull(4))
-                    product_list.Add(new Product(read.GetInt32(0), read.GetString(2), read.GetString(3), read.GetInt32(5)));
+                if (reader.IsDBNull(4))
+                    products.Add(new(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3)));
                 else
-                    product_list.Add(new ConsumableProduct(read.GetInt32(0), read.GetString(2), read.GetString(3), read.GetInt32(4), read.GetInt32(5)));
+                    products.Add(new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), reader.GetInt32(4)));
             }
 
-            con.Close();
-        }
-        override public void AddToList(Product p)
-        {
-            base.AddToList(p);
-
-            con.Open();
-
-            string cmd;
-            if (p.GetType() == typeof(ConsumableProduct))
-                cmd = $"INSERT INTO Products (id_rest,category,name,quantity, price) VALUES ({rest_id},'{p.GetCategory()}','{p.GetName()}',{p.GetQuantity()},{p.GetPrice()})";
-            else
-                cmd = $"INSERT INTO Products (id_rest,category,name, price)          VALUES ({rest_id},'{p.GetCategory()}','{p.GetName()}',{p.GetPrice()})";
-            new MySqlCommand(cmd, con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Products','INSERT','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-            con.Close();
-
-            Refresh();
-        }
-        override public void RemoveFromList(int id)
-        {
-            base.RemoveFromList(id);
-
-            con.Open();
-            new MySqlCommand($"DELETE FROM Products WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Products','DELETE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
-            Refresh();
+            return products;
         }
 
-        override public void AddQuantity(int id, int quantity)
+        public Product GetProduct(int id)
         {
-            Product wanted = product_list.Find((Product p) => p.GetId() == id);
-            wanted.IncreaseQuantity(quantity);
+            MySqlCommand cmd = new("SELECT id, category, name, price, quantity FROM Products WHERE id=@pid", _connection);
+            cmd.Parameters.AddWithValue("@pid", id);
 
-            if (wanted.GetType() != typeof(ConsumableProduct)) return;
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
 
-            con.Open();
-            new MySqlCommand($"UPDATE Products SET quantity={wanted.GetQuantity()} WHERE id={id}", con.GetCon()).ExecuteNonQuery();
-            new MySqlCommand($"INSERT INTO ChangeLog(id_rest,table_name,operation,timestamp) VALUES({rest_id},'Products','DELETE','{DateTime.Now:yyyy-MM-dd HH:mm:ss}')", con.GetCon()).ExecuteNonQuery();
+            return reader.IsDBNull(4) ?
+                new Product(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3)) :
+                new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), reader.GetInt32(4));
+        }
+        public Product GetProduct(string name)
+        {
+            MySqlCommand cmd = new("SELECT id, category, name, price, quantity FROM Products WHERE name=@name", _connection);
+            cmd.Parameters.AddWithValue("@name", name);
 
-            con.Close();
+            MySqlDataReader reader = cmd.ExecuteReader();
+            reader.Read();
 
-            Refresh();
+            return reader.IsDBNull(4) ?
+                new Product(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3)) :
+                new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), reader.GetInt32(4));
         }
 
-        public override void Refresh()
+        public void RemoveProduct(int id)
         {
-            product_list.Clear();
-            LoadFromFile();
+            MySqlCommand cmd = new("DELETE FROM Products WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+
+            cmd.ExecuteNonQuery();
+        }
+
+        public void AddQuantity(int id, int quantity)
+        {
+            MySqlCommand cmd = new MySqlCommand("SELECT quantity FROM Products WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            if (cmd.ExecuteScalar() == null) return;
+
+            int crtQuantity = (int) cmd.ExecuteScalar();
+
+            crtQuantity += quantity;
+
+            cmd = new MySqlCommand("UPDATE TABLE Products SET quantity=@nqty WHERE id=@id", _connection);
+            cmd.Parameters.AddWithValue("@nqty", crtQuantity);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            cmd.ExecuteNonQuery();
         }
     }
 }

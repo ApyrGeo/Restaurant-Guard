@@ -1,4 +1,4 @@
-﻿namespace Restaurant_Management_App
+﻿namespace Restaurant_Management_App_2
 {
     partial class ManageProducts
     {

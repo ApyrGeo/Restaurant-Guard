@@ -9,12 +9,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public partial class ManageRestaurant : Form
     {
         private MainMenu mmenu;
-        private ServiceRestaurant sr;
+        private ServiceExistingRestaurant sr;
         private ServiceTable st;
         private int L, H, x, y;
         private int ImgScale;
@@ -39,7 +39,7 @@ namespace Restaurant_Management_App
             double res = Convert.ToDouble(y) * 100.00 / Convert.ToDouble(mmenu.GetPanelSize().Height);
             return Math.Round(res, 2);
         }
-        public ManageRestaurant(MainMenu mmenu, ServiceRestaurant sr, ServiceTable st)
+        public ManageRestaurant(MainMenu mmenu, ServiceExistingRestaurant sr, ServiceTable st)
         {
             InitializeComponent();
             this.mmenu = mmenu;

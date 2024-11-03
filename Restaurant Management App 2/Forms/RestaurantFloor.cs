@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace Restaurant_Management_App
+namespace Restaurant_Management_App_2
 {
     public partial class RestaurantFloor : Form
     {
         private MainMenu mmenu;
         private ServiceTable st;
-        private ServiceRestaurant sr;
+        private ServiceExistingRestaurant sr;
         private ServiceOrder so;
         private ServiceProduct sp;
         private int L, H, x, y, dy;
@@ -122,7 +122,7 @@ namespace Restaurant_Management_App
             new FormAddToOrder(so, sp, this, so.GetRepoOrder().FindOrderByTableId(current_table).GetId()).ShowDialog();
         }
 
-        public RestaurantFloor(MainMenu mmenu, ServiceTable st, ServiceRestaurant sr, ServiceOrder so, ServiceProduct sp)
+        public RestaurantFloor(MainMenu mmenu, ServiceTable st, ServiceExistingRestaurant sr, ServiceOrder so, ServiceProduct sp)
         {
             InitializeComponent(); 
             this.st = st;
