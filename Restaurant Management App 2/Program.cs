@@ -15,12 +15,9 @@ namespace Restaurant_Management_App_2
         [STAThread]
         static void Main()
         {
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new RestaurantLogIn());
-
-            RepositoryEmployee e = new RepositoryEmployee(10000);
-            e.SaveEmployee(new Employee(0,100,"n","s","111"));
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new RestaurantLogIn(new ServiceExistingRestaurant(new RepositoryExistingRestaurant())));
         }
     }
 }

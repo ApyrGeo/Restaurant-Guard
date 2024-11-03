@@ -50,7 +50,7 @@ namespace Restaurant_Management_App_2
         }
         private bool CanBringModifications()
         {
-            if(st.GetEmptyTables().Count() != st.GetServiceRepo().GetRepoList().Count())
+            if(st.GetEmptyTables().Count() != st.GetServiceRepo().GetTables().Count())
                 return false;
             return true;
         }
@@ -93,7 +93,7 @@ namespace Restaurant_Management_App_2
                 try
                 {
                     //MessageBox.Show(getPercentageWidth(e.Location.X).ToString() + " " + getPercentagehHeight(e.Location.Y).ToString());
-                    sr.AddTable(getPercentageWidth(e.Location.X - ImgScale / 2), getPercentagehHeight(e.Location.Y - ImgScale / 2), seats);
+                    st.AddTable(seats, false, getPercentageWidth(e.Location.X - ImgScale / 2), getPercentagehHeight(e.Location.Y - ImgScale / 2));
 
                 }
                 catch(Exception ex) { MessageBox.Show(ex.Message, "Error"); return; }
@@ -111,13 +111,13 @@ namespace Restaurant_Management_App_2
                 double actualX = e.Location.X - ImgScale / 2;
                 double actualY = e.Location.Y - ImgScale / 2;
 
-                foreach (var t in sr.GetRestaurant().GetTables())
+                foreach (Table t in st.GetTables())
                 {
-                    int x = getXPositionByPerc(t.Item1);
-                    int y = getYPositionByPerc(t.Item2);
+                    int x = getXPositionByPerc(t.GetX());
+                    int y = getYPositionByPerc(t.GetY());
 
                     if (Math.Sqrt((x - actualX) * (x - actualX) + (y - actualY) * (y - actualY)) <= ImgScale /2)
-                    { sr.RemoveTable(t.Item3); break; }
+                    { st.RemoveTable(t.GetId()); break; }
                 }
 
                 //CanDelete = false;
@@ -158,21 +158,21 @@ namespace Restaurant_Management_App_2
 
             }
 
-            if (sr.GetRestaurant().GetTables() == null) return;
+            if (st.GetTables() == null) return;
 
-            Image img4 = Image.FromFile("Assets\\4-seats.png");
-            Image img6 = Image.FromFile("Assets\\6-seats.png");
-            foreach (var t in sr.GetRestaurant().GetTables())
+            Image img4 = Image.FromFile("..\\..\\..\\Assets\\4-seats.png");
+            Image img6 = Image.FromFile("..\\..\\..\\Assets\\6-seats.png");
+            foreach (var t in st.GetTables())
             {
-                int x = getXPositionByPerc(t.Item1);
-                int y = getYPositionByPerc(t.Item2);
+                int x = getXPositionByPerc(t.GetX());
+                int y = getYPositionByPerc(t.GetY());
 
-                int table_id = t.Item3;
+                int table_id = t.GetId();
 
                 try
                 {
-                    if (st.GetServiceRepo().FindTable(table_id) == null) continue;
-                    int no_seats = st.GetServiceRepo().FindTable(table_id).GetNoSeats();
+                    if (st.GetServiceRepo().GetTable(table_id) == null) continue;
+                    int no_seats = st.GetServiceRepo().GetTable(table_id).GetNoSeats();
                     if (no_seats == 4)
                         g.DrawImage(img4, new Rectangle(new Point(x, y), new Size(ImgScale, ImgScale)));
                     else if (no_seats == 6)

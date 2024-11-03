@@ -21,7 +21,7 @@ namespace Restaurant_Management_App_2
         }
         public int GetId() { return id; }
         public int GetIdTable() { return id_table; }
-        public List<Tuple<int, int>> GetCommand() {  return command; }
+        public List<Tuple<int, int>> GetCommand() { return command; }
         public void AddToCommand(Tuple<int, int> item)
         {
             this.command.Add(item);

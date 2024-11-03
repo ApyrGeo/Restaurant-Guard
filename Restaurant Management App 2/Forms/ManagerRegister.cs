@@ -14,11 +14,11 @@ namespace Restaurant_Management_App_2
 {
     public partial class ManagerRegister : Form
     {
-        Connection con;
+        private MySqlConnection con;
         public ManagerRegister()
         {
             InitializeComponent();
-            con = new Connection();
+            con = Connection.GetInstance().GetCon();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -37,6 +37,7 @@ namespace Restaurant_Management_App_2
         }
         private void CheckDataAndRegister()
         {
+            //TODO create class (service maybe) for manager creation
             if (txt_uname.Text.Length == 0) throw new Exception("Please enter an username!");
             
             if (txt_password.Text.Length == 0) throw new Exception("Please enter a password!");
@@ -44,17 +45,12 @@ namespace Restaurant_Management_App_2
 
             if (txt_password.Text != txt_cpassword.Text) throw new Exception("Passwords do not match!");
 
-            con.Open();
-            if (new MySqlCommand($"SELECT username FROM Managers WHERE username='{txt_uname.Text}'", con.GetCon()).ExecuteScalar() != null)
+            if (new MySqlCommand($"SELECT username FROM Managers WHERE username='{txt_uname.Text}'", con).ExecuteScalar() != null)
             { 
-                con.Close(); 
                 throw new Exception("The username is already taken!"); 
             }
 
-            new MySqlCommand($"INSERT INTO Managers(username, password) VALUES('{txt_uname.Text}','{txt_password.Text}')",con.GetCon()).ExecuteNonQuery();
-
-            con.Close();
-
+            new MySqlCommand($"INSERT INTO Managers(username, password) VALUES('{txt_uname.Text}','{txt_password.Text}')", con).ExecuteNonQuery();
         }
     }
 }

@@ -37,7 +37,7 @@ namespace Restaurant_Management_App_2
 
             foreach(var item in order.GetCommand())
             {
-                lbl.Text += $"{sp.GetServiceRepo().FindProduct(item.Item1).GetName()} x {item.Item2}\n";
+                lbl.Text += $"{sp.GetServiceRepo().GetProduct(item.Item1).GetName()} x {item.Item2}\n";
             }
         }
 

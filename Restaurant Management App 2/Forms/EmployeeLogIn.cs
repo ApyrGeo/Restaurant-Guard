@@ -28,7 +28,7 @@ namespace Restaurant_Management_App_2
 
         private void button1_Click(object sender, EventArgs e)
         {
-            
+
             if (se.GetEmployee(txt_uname.Text, txt_password.Text) != null)
             {
                 mmenu.UnlockEmployee();
@@ -36,8 +36,8 @@ namespace Restaurant_Management_App_2
                 this.Close();
                 this.Dispose();
             }
-            else MessageBox.Show("Invalid user credentials!","Error");
-            
+            else MessageBox.Show("Invalid user credentials!", "Error");
+
         }
 
         private void label5_MouseHover(object sender, EventArgs e)
@@ -54,6 +54,11 @@ namespace Restaurant_Management_App_2
         {
             this.Close();
             this.Dispose();
+        }
+
+        private void label3_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Restaurant_Management_App_2.Repository
     public class RepositoryExistingRestaurant
     {
         private MySqlConnection _connection;
-        private int _restaurantId = -1;
+        private int _restaurantId;
 
         public RepositoryExistingRestaurant(int id_rest)
         {
@@ -21,21 +21,26 @@ namespace Restaurant_Management_App_2.Repository
         public RepositoryExistingRestaurant()
         {
             _connection = Connection.GetInstance().GetCon();
+            _restaurantId = -1;
         }
         public int GetId() => _restaurantId;
         public void SetId(int id)
         {
             _restaurantId = id;
         }
-        public Restaurant GetRestaurant()
+        public Restaurant GetRestaurant(int rid = -1)
         {
-            MySqlCommand cmd = new("SELECT name, password, L, W, id_manager FROM Restaurants WHERE id=@rid", _connection);
-            cmd.Parameters.AddWithValue("@rid", _restaurantId);
+            MySqlCommand cmd = new($"SELECT name, password, L, W, id_manager FROM Restaurants WHERE id=@rid", _connection);
+            cmd.Parameters.AddWithValue("@rid", rid == -1 ? _restaurantId : rid);
 
             MySqlDataReader read = cmd.ExecuteReader();
+            
             read.Read();
 
-            return new Restaurant(_restaurantId, read.GetInt32(4), read.GetDouble(2), read.GetDouble(3), read.GetString(0), read.GetString(1));
+            Restaurant re = new(rid == -1 ? _restaurantId : rid, read.GetInt32(4), read.GetDouble(2), read.GetDouble(3), read.GetString(0), read.GetString(1));
+            read.Close();
+
+            return re;
         }
     }
 }

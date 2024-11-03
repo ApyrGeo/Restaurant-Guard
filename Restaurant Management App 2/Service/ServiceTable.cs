@@ -50,5 +50,10 @@ namespace Restaurant_Management_App_2
             return GetServiceRepo().GetTables().FindAll((Table t) => min <= t.GetNoSeats() && t.GetNoSeats() <= max);
         }
         public RepositoryTable GetServiceRepo() { return repo; }
+
+        public List<Table> GetTables()
+        {
+            return GetServiceRepo().GetTables();
+        }
     }
 }

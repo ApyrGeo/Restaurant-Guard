@@ -13,11 +13,11 @@ namespace Restaurant_Management_App_2
     public partial class ManageEmployees : Form
     {
         private ServiceEmployee se;
-        private MainMenu mmenu;
+        //private MainMenu mmenu;
         public ManageEmployees(ServiceEmployee se, MainMenu mmenu)
         {
             InitializeComponent();
-            this.mmenu = mmenu;
+            //this.mmenu = mmenu;
             this.se = se;
 
             dataGridView1.Width = Convert.ToInt32(Convert.ToDouble(mmenu.GetPanelSize().Width) * 3.50 / 5.00);
@@ -60,7 +60,7 @@ namespace Restaurant_Management_App_2
         public new void Refresh()
         {
             dataGridView1.Rows.Clear();
-            foreach(Employee e in se.GetServiceRepo().GetRepoList())
+            foreach(Employee e in se.GetServiceRepo().GetEmployees())
             {
                 dataGridView1.Rows.Add(e.GetId(),e.GetName(),e.GetUsername(), e.GetSalary());
             }

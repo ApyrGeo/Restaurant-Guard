@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using Restaurant_Management_App_2;
+using Restaurant_Management_App_2.Syncronization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,8 @@ namespace Restaurant_Management_App_2.Repository
             cmd.Parameters.AddWithValue("@price", p.GetPrice());
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_restaurantId).InsertIntoChangLog("Products", Operation.INSERT);
         }
 
         public List<Product> GetProducts()
@@ -45,8 +48,9 @@ namespace Restaurant_Management_App_2.Repository
                 if (reader.IsDBNull(4))
                     products.Add(new(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3)));
                 else
-                    products.Add(new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), reader.GetInt32(4)));
+                    products.Add(new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(4), reader.GetInt32(3)));
             }
+            reader.Close();
 
             return products;
         }
@@ -59,9 +63,12 @@ namespace Restaurant_Management_App_2.Repository
             MySqlDataReader reader = cmd.ExecuteReader();
             reader.Read();
 
-            return reader.IsDBNull(4) ?
+            Product p = reader.IsDBNull(4) ?
                 new Product(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3)) :
-                new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), reader.GetInt32(4));
+                new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(4), reader.GetInt32(3));
+            reader.Close();
+
+            return p;
         }
         public Product GetProduct(string name)
         {
@@ -71,9 +78,12 @@ namespace Restaurant_Management_App_2.Repository
             MySqlDataReader reader = cmd.ExecuteReader();
             reader.Read();
 
-            return reader.IsDBNull(4) ?
+            Product p = reader.IsDBNull(4) ?
                 new Product(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3)) :
                 new ConsumableProduct(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetInt32(3), reader.GetInt32(4));
+            reader.Close();
+
+            return p;
         }
 
         public void RemoveProduct(int id)
@@ -83,6 +93,8 @@ namespace Restaurant_Management_App_2.Repository
 
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_restaurantId).InsertIntoChangLog("Products", Operation.DELETE);
         }
 
         public void AddQuantity(int id, int quantity)
@@ -96,11 +108,13 @@ namespace Restaurant_Management_App_2.Repository
 
             crtQuantity += quantity;
 
-            cmd = new MySqlCommand("UPDATE TABLE Products SET quantity=@nqty WHERE id=@id", _connection);
+            cmd = new MySqlCommand("UPDATE Products SET quantity=@nqty WHERE id=@id", _connection);
             cmd.Parameters.AddWithValue("@nqty", crtQuantity);
             cmd.Parameters.AddWithValue("@id", id);
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_restaurantId).InsertIntoChangLog("Products", Operation.UPDATE);
         }
     }
 }

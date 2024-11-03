@@ -52,15 +52,15 @@ namespace Restaurant_Management_App_2
                 double actualX = e.Location.X - ImgScale / 2;
                 double actualY = e.Location.Y - ImgScale / 2;
 
-                foreach (var t in sr.GetRestaurant().GetTables())
+                foreach (var t in st.GetTables())
                 {
-                    int x = getXPositionByPerc(t.Item1);
-                    int y = getYPositionByPerc(t.Item2) + dy;
+                    int x = getXPositionByPerc(t.GetX());
+                    int y = getYPositionByPerc(t.GetY()) + dy;
 
-                    int table_id = t.Item3;
+                    int table_id = t.GetId();
                     if (Math.Sqrt((x - actualX) * (x - actualX) + (y - actualY) * (y - actualY)) <= ImgScale/2)
                     {
-                        if(st.GetServiceRepo().FindTable(table_id).GetStatus() == false)
+                        if(st.GetServiceRepo().GetTable(table_id).GetStatus() == false)
                         {
                             contextMenuStrip.Items[0].Enabled = true;
                             contextMenuStrip.Items[1].Enabled = false;
@@ -93,12 +93,15 @@ namespace Restaurant_Management_App_2
 
         private void emptyTableToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (so.GetRepoOrder().FindOrderByTableId(current_table).GetStatus() == "IN PROGRESS") //to change
+            Order? o = so.GetRepoOrder().FindOrderByTableId(current_table);//TODO check for errors
+            if (o == null) return;
+
+            if (o.GetStatus() == "IN PROGRESS") //to change
             {
                 MessageBox.Show("Cannot empty the table while an order is still in progress!", "Warning"); 
                 return;
             }
-            so.RemoveOrder(so.GetRepoOrder().FindOrderByTableId(current_table).GetId());
+            so.RemoveOrder(o.GetId());
             Refresh();
         }
 
@@ -106,11 +109,14 @@ namespace Restaurant_Management_App_2
         {
             string order = "Items from this order: \n\n\n\n";
             int price = 0;
-            foreach(var o in so.GetRepoOrder().FindOrderByTableId(current_table).GetCommand())
+
+            Order? or = so.GetRepoOrder().FindOrderByTableId(current_table);//TODO check for errors
+            if (or == null) return;
+            foreach (var o in or.GetCommand())
             {
-                int crt_price = sp.GetServiceRepo().FindProduct(o.Item1).GetPrice();
+                int crt_price = sp.GetServiceRepo().GetProduct(o.Item1).GetPrice();
                 price += crt_price * o.Item2;
-                order += sp.GetServiceRepo().FindProduct(o.Item1).GetName() + "\t\tx " + o.Item2.ToString() + "\t\t" + crt_price.ToString() + "$\n";
+                order += sp.GetServiceRepo().GetProduct(o.Item1).GetName() + "\t\tx " + o.Item2.ToString() + "\t\t" + crt_price.ToString() + "$\n";
             }
             order += "\n\n\n\nTotal: " + price.ToString() + "$";
 
@@ -119,7 +125,9 @@ namespace Restaurant_Management_App_2
 
         private void addProductsToOrderToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            new FormAddToOrder(so, sp, this, so.GetRepoOrder().FindOrderByTableId(current_table).GetId()).ShowDialog();
+            Order? o = so.GetRepoOrder().FindOrderByTableId(current_table); //TODO check for errors
+            if (o == null) return;
+            new FormAddToOrder(so, sp, this, o.GetId()).ShowDialog();
         }
 
         public RestaurantFloor(MainMenu mmenu, ServiceTable st, ServiceExistingRestaurant sr, ServiceOrder so, ServiceProduct sp)
@@ -140,32 +148,35 @@ namespace Restaurant_Management_App_2
             g.FillRectangle(new SolidBrush(Color.SeaGreen), x, y, L, H);
 
 
-            if (sr.GetRestaurant().GetTables() == null) return;
+            if (st.GetTables() == null) return;
 
-            Image img4 = Image.FromFile("Assets\\4-seats.png");
-            Image img6 = Image.FromFile("Assets\\6-seats.png");
-            foreach (var t in sr.GetRestaurant().GetTables())
+            Image img4 = Image.FromFile("..\\..\\..\\Assets\\4-seats.png");
+            Image img6 = Image.FromFile("..\\..\\..\\Assets\\6-seats.png");
+            foreach (var t in st.GetTables())
             {
-                int table_id = t.Item3;
-                int x = getXPositionByPerc(t.Item1);
-                int y = getYPositionByPerc(t.Item2);
-                int no_seats = st.GetServiceRepo().FindTable(table_id).GetNoSeats();
+                int table_id = t.GetId();
+                int x = getXPositionByPerc(t.GetX());
+                int y = getYPositionByPerc(t.GetY());
+                int no_seats = st.GetServiceRepo().GetTable(table_id).GetNoSeats();
                 if (no_seats == 4)
                     g.DrawImage(img4, new Rectangle(new Point(x, y + dy), new Size(ImgScale, ImgScale)));
                 else if (no_seats == 6) 
                     g.DrawImage(img6, new Rectangle(new Point(x, y + dy), new Size(ImgScale, ImgScale)));
 
-                if (st.GetServiceRepo().FindTable(table_id).GetStatus() == false)
+                if (st.GetServiceRepo().GetTable(table_id).GetStatus() == false)
                     g.FillEllipse(new SolidBrush(Color.Green), x, y + dy, 20, 20);
                 else
                 {
                     g.FillEllipse(new SolidBrush(Color.Red), x, y + dy, 20, 20);
 
-                    if (so.GetRepoOrder().FindOrderByTableId(table_id).GetStatus() == "NOT TAKEN")
+                    Order? o = so.GetRepoOrder().FindOrderByTableId(table_id);
+                    if (o == null) return; //TODO check for errors
+
+                    if (o.GetStatus() == "NOT TAKEN")
                         g.FillEllipse(new SolidBrush(Color.Red), x + 30, y + dy, 20, 20);
-                    else if (so.GetRepoOrder().FindOrderByTableId(table_id).GetStatus() == "IN PROGRESS")
+                    else if (o.GetStatus() == "IN PROGRESS")
                         g.FillEllipse(new SolidBrush(Color.Yellow), x + 30, y + dy, 20, 20);
-                    else if (so.GetRepoOrder().FindOrderByTableId(table_id).GetStatus() == "DONE")
+                    else if (o.GetStatus() == "DONE")
                         g.FillEllipse(new SolidBrush(Color.Green), x + 30, y + dy, 20, 20);
                 }
             }

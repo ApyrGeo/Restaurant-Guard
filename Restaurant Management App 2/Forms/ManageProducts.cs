@@ -17,12 +17,12 @@ namespace Restaurant_Management_App_2
     public partial class ManageProducts : Form
     {
         private ServiceProduct sp;
-        private MainMenu mmenu;
+        //private MainMenu mmenu;
         public ManageProducts(ServiceProduct sp, MainMenu mmenu)
         {
             InitializeComponent();
             this.sp = sp;
-            this.mmenu = mmenu;
+            //this.mmenu = mmenu;
 
             dataGridView1.Height = Convert.ToInt32(Convert.ToDouble(mmenu.GetPanelSize().Height) * 3.00 / 5.00);
 
@@ -40,11 +40,9 @@ namespace Restaurant_Management_App_2
         public new void Refresh()
         {
             dataGridView1.Rows.Clear();
-            foreach(Product p in sp.GetServiceRepo().GetRepoList())
+            foreach(Product p in sp.GetServiceRepo().GetProducts())
             {
-                dataGridView1.Rows.Add(p.GetId().ToString(), p.GetName(), p.GetCategory(),(p.GetQuantity() > 0 ? p.GetQuantity().ToString() : "-"), p.GetPrice());                
-            
-                
+                dataGridView1.Rows.Add(p.GetId().ToString(), p.GetName(), p.GetCategory(),(p.GetQuantity() > 0 ? p.GetQuantity().ToString() : "-"), p.GetPrice());                    
             }
         }
 

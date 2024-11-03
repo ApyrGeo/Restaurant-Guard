@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Restaurant_Management_App_2;
+using Restaurant_Management_App_2.Syncronization;
 
 namespace Restaurant_Management_App_2.Repository
 { 
@@ -29,7 +31,7 @@ namespace Restaurant_Management_App_2.Repository
             {
                 employees.Add(new Employee(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4)));
             }
-
+            reader.Close();
             return employees;
         }
 
@@ -42,7 +44,10 @@ namespace Restaurant_Management_App_2.Repository
             MySqlDataReader reader = cmd.ExecuteReader();
 
             reader.Read();
-            return new(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
+
+            Employee e = new(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
+            reader.Close();
+            return e;
         }
 
         public void SaveEmployee(Employee e)
@@ -55,6 +60,8 @@ namespace Restaurant_Management_App_2.Repository
             cmd.Parameters.AddWithValue("@password", e.GetPassword());
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_idRestaurant).InsertIntoChangLog("Employees", Operation.INSERT);
         }
 
         public void DeleteEmployee(int id)
@@ -63,6 +70,8 @@ namespace Restaurant_Management_App_2.Repository
             cmd.Parameters.AddWithValue("@id", id);
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_idRestaurant).InsertIntoChangLog("Employees", Operation.DELETE);
         }
 
         public Employee FindEmployee(string username)
@@ -73,7 +82,10 @@ namespace Restaurant_Management_App_2.Repository
             MySqlDataReader reader = cmd.ExecuteReader();
 
             reader.Read();
-            return new(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
+            
+            Employee e = new(reader.GetInt32(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), reader.GetString(4));
+            reader.Close();
+            return e;
         }
     }
 }

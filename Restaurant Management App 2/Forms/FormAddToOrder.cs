@@ -59,7 +59,7 @@ namespace Restaurant_Management_App_2
         private new void Refresh()
         {
             dataGridView1.Rows.Clear();
-            foreach(Product p in sp.GetServiceRepo().GetRepoList())
+            foreach(Product p in sp.GetServiceRepo().GetProducts())
             {
                 dataGridView1.Rows.Add(p.GetId(), p.GetName(), p.GetCategory(), (p.GetQuantity() > 0 ? p.GetQuantity().ToString() : "-"));
             }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using MySql.Data.MySqlClient;
 using Restaurant_Management_App_2;
+using Restaurant_Management_App_2.Syncronization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,7 @@ namespace Restaurant_Management_App_2.Repository
             {
                 tables.Add(new(reader.GetInt32(0), reader.GetInt32(1), reader.GetBoolean(2), reader.GetFloat(3), reader.GetFloat(4)));
             }
+            reader.Close();
 
             return tables;
         }
@@ -44,7 +46,9 @@ namespace Restaurant_Management_App_2.Repository
             MySqlDataReader reader = cmd.ExecuteReader();
             reader.Read();
 
-            return new Table(reader.GetInt32(0), reader.GetInt32(1), reader.GetBoolean(2), reader.GetFloat(3), reader.GetFloat(4));
+            Table t = new Table(reader.GetInt32(0), reader.GetInt32(1), reader.GetBoolean(2), reader.GetFloat(3), reader.GetFloat(4));
+            reader.Close();
+            return t;
         }
 
         public void AddTable(Table t)
@@ -57,6 +61,8 @@ namespace Restaurant_Management_App_2.Repository
             cmd.Parameters.AddWithValue("@Y", t.GetY());
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_restaurantId).InsertIntoChangLog("Tables", Operation.INSERT);
         }
 
         public void RemoveTable(int id)
@@ -65,15 +71,19 @@ namespace Restaurant_Management_App_2.Repository
             cmd.Parameters.AddWithValue("@id", id);
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_restaurantId).InsertIntoChangLog("Tables", Operation.DELETE);
         }
 
         public void ChangeStatus(int id, bool newStatus)
         {
-            MySqlCommand cmd = new("UPDATE TABLE Tables SET status=@nstatus WHERE id=@id", _connection);
+            MySqlCommand cmd = new("UPDATE Tables SET status=@nstatus WHERE id=@id", _connection);
             cmd.Parameters.AddWithValue("@id", id);
             cmd.Parameters.AddWithValue("@nstatus", newStatus);
 
             cmd.ExecuteNonQuery();
+
+            new ChangeLog(_restaurantId).InsertIntoChangLog("Tables", Operation.UPDATE);
         }
     }
 }

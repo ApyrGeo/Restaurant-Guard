@@ -25,7 +25,9 @@ namespace Restaurant_Management_App_2
 
             if (password.Length == 0) throw new Exception("Please enter a password!");
 
-            if (!(repo.GetRestaurant().GetId() == Convert.ToInt32(id) && repo.GetRestaurant().GetPassword() == password))
+            Restaurant r = repo.GetRestaurant(Convert.ToInt32(id));
+
+            if (!(r.GetId() == Convert.ToInt32(id) && r.GetPassword() == password))
                 throw new Exception("Id and password do not match");
         }
 

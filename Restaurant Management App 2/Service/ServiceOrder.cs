@@ -87,7 +87,8 @@ namespace Restaurant_Management_App_2
 
             GetRepoOrder().ChangeStatus(order_id, "IN PROGRESS");
 
-            GetRepoProduct().AddQuantity(item.Item1, -item.Item2);
+            if(GetRepoOrder().FindOrder(order_id).GetType() == typeof(ConsumableProduct))
+                GetRepoProduct().AddQuantity(item.Item1, -item.Item2);
 
             return this;
         }

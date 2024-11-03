@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using Restaurant_Management_App_2;
+using Restaurant_Management_App_2.Syncronization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace Restaurant_Management_App_2.Repository
             {
                 restaurants.Add(new Restaurant(read.GetInt32(0), read.GetInt32(5), read.GetDouble(3), read.GetDouble(4), read.GetString(1), read.GetString(2)));
             }
-
+            read.Close();
             return restaurants;
         }
 
@@ -42,9 +43,28 @@ namespace Restaurant_Management_App_2.Repository
 
             cmd.ExecuteNonQuery();
 
+
             return (int) new MySqlCommand("SELECT LAST_INSERT_ID() FROM Restaurants", _connection).ExecuteScalar();
         }
+        public int CheckManagerExists(string uname, string pass)
+        {
+            MySqlCommand cmd = new("SELECT id FROM Managers WHERE username=@uname AND password=@pass", _connection);
+            cmd.Parameters.AddWithValue("@uname", uname);
+            cmd.Parameters.AddWithValue("@pass", pass);
 
+            MySqlDataReader reader = cmd.ExecuteReader();
+
+            if(reader.HasRows)
+            {
+                reader.Read();
+
+                int result = reader.GetInt32(0);
+                reader.Close();
+                return result;
+            }
+            reader.Close();
+            return -1;
+        }
         public bool CheckManagerExists(int id_manager)
         {
             MySqlCommand cmd = new("SELECT username FROM Managers WHERE id=@id", _connection);

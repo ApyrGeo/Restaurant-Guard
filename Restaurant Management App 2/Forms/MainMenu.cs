@@ -1,5 +1,7 @@
-﻿using MySql.Data.MySqlClient;
+﻿using Google.Protobuf.WellKnownTypes;
+using MySql.Data.MySqlClient;
 using Restaurant_Management_App_2;
+using Restaurant_Management_App_2.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -21,7 +23,7 @@ namespace Restaurant_Management_App_2
 
         private Timer timerLogOut;
 
-        private Connection con;
+        private MySqlConnection con;
 
         private readonly ServiceTable ServiceTable;
         private readonly ServiceEmployee ServiceEmployee;
@@ -40,11 +42,11 @@ namespace Restaurant_Management_App_2
 
             this.MinimumSize = new Size(Screen.FromControl(this).Bounds.Width,Screen.FromControl(this).Bounds.Height);
 
-            ServiceEmployee = new ServiceEmployee(new RepositoryFileEmployee(restaurant.GetId()));
-            ServiceTable = new ServiceTable(new RepositoryFileTable(restaurant.GetId()));
-            ServiceProduct = new ServiceProduct(new RepositoryFileProduct(restaurant.GetId()));
-            ServiceOrder = new ServiceOrder(new RepositoryFileOrder(restaurant.GetId()), ServiceTable.GetServiceRepo(), ServiceProduct.GetServiceRepo());
-            ServiceRestaurant = new ServiceRestaurant(restaurant, ServiceTable.GetServiceRepo());
+            ServiceEmployee = new ServiceEmployee(new RepositoryEmployee(restaurant.GetId()));
+            ServiceTable = new ServiceTable(new RepositoryTable(restaurant.GetId()));
+            ServiceProduct = new ServiceProduct(new RepositoryProduct(restaurant.GetId()));
+            ServiceOrder = new ServiceOrder(new RepositoryOrder(restaurant.GetId()), ServiceTable.GetServiceRepo(), ServiceProduct.GetServiceRepo());
+            ServiceRestaurant = new ServiceExistingRestaurant(new RepositoryExistingRestaurant(restaurant.GetId()));
 
             kitchen_window = new Kitchen(ServiceOrder, ServiceProduct);
             kitchen_window.TopLevel = false;
@@ -57,7 +59,7 @@ namespace Restaurant_Management_App_2
             floor_window = new RestaurantFloor(this, ServiceTable, ServiceRestaurant, ServiceOrder, ServiceProduct);
             floor_window.TopLevel = false;
 
-            con = new Connection();
+            con = Connection.GetInstance().GetCon();
 
             InitializeTimer();
             lastCheckedTime = DateTime.Now;
@@ -70,6 +72,7 @@ namespace Restaurant_Management_App_2
 
             this.Text = "Restaurant Guard - " + restaurant.GetName();
         }
+        //TODO refactor this code part in a separate class
         private void InitializeTimerLogOut()
         {
             timerLogOut = new Timer();
@@ -91,50 +94,53 @@ namespace Restaurant_Management_App_2
         }
         private void CheckForChanges(object sender, EventArgs e)
         {
-            con.Open();
-
-            MySqlCommand cmd = new MySqlCommand($"SELECT * FROM ChangeLog WHERE timestamp > @last AND id_rest={ServiceRestaurant.GetRestaurant().GetId()}", con.GetCon());
+            MySqlCommand cmd = new MySqlCommand($"SELECT * FROM ChangeLog WHERE timestamp > @last AND id_rest={ServiceRestaurant.GetRestaurant().GetId()}", con);
             cmd.Parameters.AddWithValue("@last", lastCheckedTime.ToString("yyyy-MM-dd HH:mm:ss"));
+
+            lastCheckedTime = DateTime.Now;
             MySqlDataReader read = cmd.ExecuteReader();
+
+            List<string> updates = new List<string>();
+            bool requiresUpdate = false;
 
             while (read.Read())
             {
-                string table_name = read.GetString(2);
+                requiresUpdate = true;
+                updates.Add(read.GetString(2));
+            }
+            read.Close();
 
+            if (!requiresUpdate) return;
+
+            updates.ForEach(table_name => { 
                 if (table_name == "Products")
                 {
-                    ServiceProduct.GetServiceRepo().Refresh();
                     products_window.Refresh();
                 }
                 else if (table_name == "Employees")
                 {
-                    ServiceEmployee.GetServiceRepo().Refresh();
                     employees_window.Refresh();
                 }
                 else if (table_name == "Tables")
                 {
-                    ServiceTable.GetServiceRepo().Refresh();
                     employees_window.Refresh();
                     restaurant_window.Refresh();
                     floor_window.Refresh();
                 }
                 else if (table_name == "Orders")
                 {
-                    ServiceOrder.GetRepoOrder().Refresh();
                     employees_window.Refresh();
                     kitchen_window.Refresh();
                     floor_window.Refresh();
                 }
                 else if (table_name == "Restaurants")
                 {
-                    ServiceRestaurant.GetRestaurant().Refresh();
                     restaurant_window.Refresh();
                 }
-
-            }
-            lastCheckedTime = DateTime.Now - TimeSpan.FromSeconds(10);
-            con.Close();
+            });
+            
         }
+        //
         private void accessKitchenToolStripMenuItem_Click(object sender, EventArgs e)
         {
             panel1.Controls.Clear();

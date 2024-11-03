@@ -14,18 +14,15 @@ namespace Restaurant_Management_App_2
 {
     public partial class RestaurantLogIn : Form
     {
-        private MySqlConnection _connection;
         private ServiceExistingRestaurant ser;
         public RestaurantLogIn(ServiceExistingRestaurant ser)
         {
             InitializeComponent();
-            _connection = Connection.GetInstance().GetCon();
             this.ser = ser;
         }
         public RestaurantLogIn(ServiceExistingRestaurant ser, int id)
         {
             InitializeComponent();
-            _connection = Connection.GetInstance().GetCon();
             this.ser = ser;
             txt_id.Text = id.ToString();
         }
